@@ -44,10 +44,11 @@
         };
 
         let cats = [];
+        let initialCatCount = 5;
 
         function initializeCats() {
             cats = [];
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < initialCatCount; i++) {
                 cats.push({
                     x: Math.random() * canvas.width,
                     y: Math.random() * canvas.height,
@@ -115,6 +116,11 @@
                     cats.splice(index, 1);
                     score++;
                     scoreElement.textContent = score;
+
+                    if (cats.length === 0) {
+                        gameRunning = false;
+                        winMessage.style.display = 'block';
+                    }
                 }
             });
         }
@@ -129,10 +135,7 @@
             moveCats();
             checkCollisions();
 
-            if (cats.length === 0) {
-                gameRunning = false;
-                winMessage.style.display = 'block';
-            } else {
+            if (gameRunning) {
                 requestAnimationFrame(gameLoop);
             }
         }
