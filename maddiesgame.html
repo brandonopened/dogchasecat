@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dogs Chasing Cats Game</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <p>Score: <span id="score">0</span></p>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+
+        let score = 0;
+
+        const dogImg = new Image();
+        dogImg.src = 'dog.png';  // Using provided dog image
+        const catImg = new Image();
+        catImg.src = 'cat.png';  // Using provided cat image
+
+        const dog = {
+            x: 200,
+            y: 200,
+            size: 40,
+            speed: 10  // Increased dog speed
+        };
+
+        const cats = [];
+        for (let i = 0; i < 5; i++) {
+            cats.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: 30,
+                speed: 1,
+                direction: Math.random() * Math.PI * 2
+            });
+        }
+
+        function drawDog() {
+            ctx.drawImage(dogImg, dog.x - dog.size / 2, dog.y - dog.size / 2, dog.size, dog.size);
+        }
+
+        function drawCat(cat) {
+            ctx.drawImage(catImg, cat.x - cat.size / 2, cat.y - cat.size / 2, cat.size, cat.size);
+        }
+
+        function moveDog(dx, dy) {
+            dog.x = Math.max(0, Math.min(canvas.width, dog.x + dx * dog.speed));
+            dog.y = Math.max(0, Math.min(canvas.height, dog.y + dy * dog.speed));
+        }
+
+        function moveCats() {
+            cats.forEach(cat => {
+                // Calculate direction away from dog
+                const dx = cat.x - dog.x;
+                const dy = cat.y - dog.y;
+                const angle = Math.atan2(dy, dx);
+
+                // Move away from dog if close, otherwise move randomly
+                const distanceToFlee = 100;
+                const distanceToDog = Math.sqrt(dx * dx + dy * dy);
+
+                if (distanceToDog < distanceToFlee) {
+                    cat.x += Math.cos(angle) * cat.speed;
+                    cat.y += Math.sin(angle) * cat.speed;
+                } else {
+                    cat.x += Math.cos(cat.direction) * cat.speed;
+                    cat.y += Math.sin(cat.direction) * cat.speed;
+                }
+
+                // Bounce off walls
+                if (cat.x < 0 || cat.x > canvas.width) cat.direction = Math.PI - cat.direction;
+                if (cat.y < 0 || cat.y > canvas.height) cat.direction = -cat.direction;
+
+                // Occasionally change direction
+                if (Math.random() < 0.02) {
+                    cat.direction = Math.random() * Math.PI * 2;
+                }
+
+                // Keep cats within canvas
+                cat.x = Math.max(0, Math.min(canvas.width, cat.x));
+                cat.y = Math.max(0, Math.min(canvas.height, cat.y));
+            });
+        }
+
+        function checkCollisions() {
+            cats.forEach((cat, index) => {
+                const dx = cat.x - dog.x;
+                const dy = cat.y - dog.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < (dog.size + cat.size) / 2) {
+                    cats.splice(index, 1);
+                    score++;
+                    scoreElement.textContent = score;
+
+                    if (cats.length < 5) {
+                        cats.push({
+                            x: Math.random() * canvas.width,
+                            y: Math.random() * canvas.height,
+                            size: 30,
+                            speed: 2,
+                            direction: Math.random() * Math.PI * 2
+                        });
+                    }
+                }
+            });
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            drawDog();
+            cats.forEach(drawCat);
+            moveCats();
+            checkCollisions();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'ArrowUp': moveDog(0, -1); break;
+                case 'ArrowDown': moveDog(0, 1); break;
+                case 'ArrowLeft': moveDog(-1, 0); break;
+                case 'ArrowRight': moveDog(1, 0); break;
+            }
+        });
+
+        // Start the game when both images are loaded
+        Promise.all([
+            new Promise(resolve => dogImg.onload = resolve),
+            new Promise(resolve => catImg.onload = resolve)
+        ]).then(() => {
+            gameLoop();
+        });
+    </script>
+</body>
+</html>
