@@ -8,39 +8,54 @@
         canvas {
             border: 1px solid black;
         }
+        #winMessage {
+            display: none;
+            font-size: 24px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas" width="400" height="400"></canvas>
     <p>Score: <span id="score">0</span></p>
+    <div id="winMessage">
+        <p>You win!</p>
+        <button onclick="startGame()">Play Again</button>
+    </div>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreElement = document.getElementById('score');
+        const winMessage = document.getElementById('winMessage');
 
         let score = 0;
+        let gameRunning = true;
 
         const dogImg = new Image();
-        dogImg.src = 'dog.png';  // Using provided dog image
+        dogImg.src = 'dog.png';  // Adjust the path to match the correct location
         const catImg = new Image();
-        catImg.src = 'cat.png';  // Using provided cat image
+        catImg.src = 'cat.png';  // Adjust the path to match the correct location
 
         const dog = {
             x: 200,
             y: 200,
             size: 40,
-            speed: 10  // Increased dog speed
+            speed: 7  // Increased dog speed
         };
 
-        const cats = [];
-        for (let i = 0; i < 5; i++) {
-            cats.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                size: 30,
-                speed: 1,
-                direction: Math.random() * Math.PI * 2
-            });
+        let cats = [];
+
+        function initializeCats() {
+            cats = [];
+            for (let i = 0; i < 5; i++) {
+                cats.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: 30,
+                    speed: 2,
+                    direction: Math.random() * Math.PI * 2
+                });
+            }
         }
 
         function drawDog() {
@@ -100,21 +115,13 @@
                     cats.splice(index, 1);
                     score++;
                     scoreElement.textContent = score;
-
-                    if (cats.length < 5) {
-                        cats.push({
-                            x: Math.random() * canvas.width,
-                            y: Math.random() * canvas.height,
-                            size: 30,
-                            speed: 2,
-                            direction: Math.random() * Math.PI * 2
-                        });
-                    }
                 }
             });
         }
 
         function gameLoop() {
+            if (!gameRunning) return;
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             drawDog();
@@ -122,10 +129,17 @@
             moveCats();
             checkCollisions();
 
-            requestAnimationFrame(gameLoop);
+            if (cats.length === 0) {
+                gameRunning = false;
+                winMessage.style.display = 'block';
+            } else {
+                requestAnimationFrame(gameLoop);
+            }
         }
 
         document.addEventListener('keydown', (e) => {
+            if (!gameRunning) return;
+
             switch (e.key) {
                 case 'ArrowUp': moveDog(0, -1); break;
                 case 'ArrowDown': moveDog(0, 1); break;
@@ -134,12 +148,23 @@
             }
         });
 
+        function startGame() {
+            score = 0;
+            scoreElement.textContent = score;
+            gameRunning = true;
+            winMessage.style.display = 'none';
+            dog.x = 200;
+            dog.y = 200;
+            initializeCats();
+            gameLoop();
+        }
+
         // Start the game when both images are loaded
         Promise.all([
-            new Promise(resolve => dogImg.onload = resolve),
-            new Promise(resolve => catImg.onload = resolve)
+            new Promise(resolve => { dogImg.onload = resolve; dogImg.onerror = () => alert('Failed to load dog image'); }),
+            new Promise(resolve => { catImg.onload = resolve; catImg.onerror = () => alert('Failed to load cat image'); })
         ]).then(() => {
-            gameLoop();
+            startGame();
         });
     </script>
 </body>
